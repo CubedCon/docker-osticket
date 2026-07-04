@@ -33,18 +33,35 @@ ENV OSTICKET_VERSION=${OSTICKET_VERSION:-"v1.18"} \
 # Define sane defaults for nginx user/group used by base image
 ENV NGINX_USER=${NGINX_USER:-nginx} NGINX_GROUP=${NGINX_GROUP:-nginx}
 
-### Dependency Installation (Alpine base)
-RUN set -xe && \
-    apk update && \
-    apk upgrade && \
-    apk add --no-cache \
-        git \
-        openldap \
-        openssl \
-        php82-pecl-memcached \
-        tar \
-        wget \
-        zlib && \
+### Dependency Installation (detect package manager)
+RUN set -xe; \
+    if command -v apk >/dev/null 2>&1; then \
+      apk update && \
+      apk upgrade && \
+      apk add --no-cache \
+          git \
+          openldap \
+          openssl \
+          php82-pecl-memcached \
+          tar \
+          wget \
+          zlib \
+      ; \
+    elif command -v apt-get >/dev/null 2>&1; then \
+      export DEBIAN_FRONTEND=noninteractive; \
+      apt-get update && \
+      apt-get install -y --no-install-recommends \
+          git \
+          libldap-common \
+          openssl \
+          php-memcached \
+          tar \
+          wget \
+          zlib1g \
+      && rm -rf /var/lib/apt/lists/*; \
+    else \
+      echo "Unsupported base image: no apk or apt-get found" >&2; exit 127; \
+    fi && \
     git clone --depth 1 --branch "${OSTICKET_VERSION}" "${OSTICKET_REPO_URL}" /assets/install && \
     chown -R "${NGINX_USER}":"${NGINX_GROUP}" /assets/install && \
     chmod -R a+rX /assets/install/ && \
@@ -79,10 +96,17 @@ RUN set -x && \
     git clone --depth 1 --branch master https://github.com/ipavlovi/osTicket-Microsoft-Teams-plugin /assets/install/include/plugins/teams
 
 ### Log Miscellany Installation and Cleanup
-RUN set -x && \
+RUN set -x; \
     touch /var/log/msmtp.log && \
     chown "${NGINX_USER}":"${NGINX_GROUP}" /var/log/msmtp.log && \
-    apk del --no-cache git || true && \
+    if command -v apk >/dev/null 2>&1; then \
+      apk del --no-cache git || true; \
+    elif command -v apt-get >/dev/null 2>&1; then \
+      export DEBIAN_FRONTEND=noninteractive; \
+      apt-get purge -y git || true; \
+      apt-get autoremove -y || true; \
+      rm -rf /var/lib/apt/lists/*; \
+    fi && \
     rm -rf \
             /root/.composer \
             /tmp/* \
