@@ -31,7 +31,7 @@ ENV OSTICKET_VERSION=${OSTICKET_VERSION:-"v1.18"} \
     IMAGE_REPO_URL="https://github.com/CubedCon/docker-osticket/"
 
 ### Dependency Installation
-RUN source /assets/functions/00-container && \
+RUN . /assets/functions/00-container && \
     set -x && \
     package update && \
     package upgrade && \
