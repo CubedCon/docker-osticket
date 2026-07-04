@@ -2,7 +2,7 @@ ARG DISTRO=debian
 ARG DISTRO_VARIANT=bullseye
 ARG PHP_VERSION=8.2
 
-FROM docker.io/tiredofit/nginx-php-fpm:${PHP_VERSION}-${DISTRO}-${DISTRO_VARIANT}
+FROM docker.io/richarvey/nginx-php-fpm:latest
 LABEL maintainer="Dave Conroy (github.com/tiredofit)"
 
 ARG OSTICKET_VERSION
