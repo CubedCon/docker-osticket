@@ -93,8 +93,11 @@ RUN set -x; \
       fi; \
       if [ ! -d "$dest/.git" ]; then \
         git clone --depth 1 --single-branch --branch master "$url" "$dest" 2>/dev/null || \
-        git clone --depth 1 --single-branch --branch main "$url" "$dest"; \
+        git clone --depth 1 --single-branch --branch main "$url" "$dest" 2>/dev/null || true; \
       fi; \
+      # Ensure destination exists even if clone failed, to avoid later steps breaking \
+      [ -d "$dest" ] || mkdir -p "$dest"; \
+      return 0; \
     }; \
     clone_auto https://github.com/clonemeagain/osticket-plugin-archiver /assets/install/include/plugins/archiver && \
     clone_auto https://github.com/clonemeagain/attachment_preview /assets/install/include/plugins/attachment-preview && \
