@@ -50,11 +50,12 @@ RUN set -xe; \
     elif command -v apt-get >/dev/null 2>&1; then \
       export DEBIAN_FRONTEND=noninteractive; \
       apt-get update && \
+      if apt-cache show php8.2-memcached >/dev/null 2>&1; then PHP_MEMCACHED_PKG=php8.2-memcached; else PHP_MEMCACHED_PKG=php-memcached; fi; \
       apt-get install -y --no-install-recommends \
           git \
           libldap-common \
           openssl \
-          php-memcached \
+          "$PHP_MEMCACHED_PKG" \
           tar \
           wget \
           zlib1g \
