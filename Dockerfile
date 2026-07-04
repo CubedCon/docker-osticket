@@ -1,8 +1,8 @@
 ARG DISTRO=debian
 ARG DISTRO_VARIANT=bullseye
-ARG PHP_VERSION=8.2
+ARG PHP_VERSION=php82
 
-FROM docker.io/wyveo/nginx-php-fpm:latest
+FROM docker.io/wyveo/nginx-php-fpm:${PHP_VERSION}
 LABEL maintainer="Dave Conroy (github.com/tiredofit)"
 
 ARG OSTICKET_VERSION
