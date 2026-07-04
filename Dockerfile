@@ -81,20 +81,36 @@ RUN set -x && \
     cd /
 
 ### Add Community Plugins
-RUN set -x && \
-    git clone --depth 1 --branch master https://github.com/clonemeagain/osticket-plugin-archiver /assets/install/include/plugins/archiver && \
-    git clone --depth 1 --branch master https://github.com/clonemeagain/attachment_preview /assets/install/include/plugins/attachment-preview && \
-    git clone --depth 1 --branch master https://github.com/clonemeagain/plugin-autocloser /assets/install/include/plugins/auto-closer && \
-    git clone --depth 1 --branch master https://github.com/bkonetzny/osticket-fetch-note /assets/install/include/plugins/fetch-note && \
-    git clone --depth 1 --branch master https://github.com/Micke1101/OSTicket-plugin-field-radiobuttons /assets/install/include/plugins/field-radiobuttons && \
-    git clone --depth 1 --branch master https://github.com/clonemeagain/osticket-plugin-mentioner /assets/install/include/plugins/mentioner && \
-    git clone --depth 1 --branch master https://github.com/philbertphotos/osticket-multildap-auth /assets/install/include/plugins/multi-ldap && \
-    mv /assets/install/include/plugins/multi-ldap/multi-ldap/* /assets/install/include/plugins/multi-ldap/ && \
-    rm -rf /assets/install/include/plugins/multi-ldap/multi-ldap && \
-    git clone --depth 1 --branch master https://github.com/clonemeagain/osticket-plugin-preventautoscroll /assets/install/include/plugins/prevent-autoscroll && \
-    git clone --depth 1 --branch master https://github.com/clonemeagain/plugin-fwd-rewriter /assets/install/include/plugins/rewriter && \
-    git clone --depth 1 --branch master https://github.com/clonemeagain/osticket-slack /assets/install/include/plugins/slack && \
-    git clone --depth 1 --branch master https://github.com/ipavlovi/osTicket-Microsoft-Teams-plugin /assets/install/include/plugins/teams
+RUN set -x; \
+    clone_auto() { \
+      url="$1"; dest="$2"; \
+      # Try to detect default branch (HEAD) then fallback to master/main \
+      det_branch=""; \
+      head_line=$(git ls-remote --symref "$url" HEAD 2>/dev/null | awk '/^ref:/ {print $2}'); \
+      if [ -n "$head_line" ]; then det_branch=${head_line##refs/heads/}; fi; \
+      if [ -n "$det_branch" ]; then \
+        git clone --depth 1 --single-branch --branch "$det_branch" "$url" "$dest" 2>/dev/null || true; \
+      fi; \
+      if [ ! -d "$dest/.git" ]; then \
+        git clone --depth 1 --single-branch --branch master "$url" "$dest" 2>/dev/null || \
+        git clone --depth 1 --single-branch --branch main "$url" "$dest"; \
+      fi; \
+    }; \
+    clone_auto https://github.com/clonemeagain/osticket-plugin-archiver /assets/install/include/plugins/archiver && \
+    clone_auto https://github.com/clonemeagain/attachment_preview /assets/install/include/plugins/attachment-preview && \
+    clone_auto https://github.com/clonemeagain/plugin-autocloser /assets/install/include/plugins/auto-closer && \
+    clone_auto https://github.com/bkonetzny/osticket-fetch-note /assets/install/include/plugins/fetch-note && \
+    clone_auto https://github.com/Micke1101/OSTicket-plugin-field-radiobuttons /assets/install/include/plugins/field-radiobuttons && \
+    clone_auto https://github.com/clonemeagain/osticket-plugin-mentioner /assets/install/include/plugins/mentioner && \
+    clone_auto https://github.com/philbertphotos/osticket-multildap-auth /assets/install/include/plugins/multi-ldap && \
+    if [ -d /assets/install/include/plugins/multi-ldap/multi-ldap ]; then \
+      mv /assets/install/include/plugins/multi-ldap/multi-ldap/* /assets/install/include/plugins/multi-ldap/ && \
+      rm -rf /assets/install/include/plugins/multi-ldap/multi-ldap; \
+    fi && \
+    clone_auto https://github.com/clonemeagain/osticket-plugin-preventautoscroll /assets/install/include/plugins/prevent-autoscroll && \
+    clone_auto https://github.com/clonemeagain/plugin-fwd-rewriter /assets/install/include/plugins/rewriter && \
+    clone_auto https://github.com/clonemeagain/osticket-slack /assets/install/include/plugins/slack && \
+    clone_auto https://github.com/ipavlovi/osTicket-Microsoft-Teams-plugin /assets/install/include/plugins/teams
 
 ### Log Miscellany Installation and Cleanup
 RUN set -x; \
