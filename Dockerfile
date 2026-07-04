@@ -30,20 +30,22 @@ ENV OSTICKET_VERSION=${OSTICKET_VERSION:-"v1.18"} \
     IMAGE_NAME="CubedCon/osticket" \
     IMAGE_REPO_URL="https://github.com/CubedCon/docker-osticket/"
 
-### Dependency Installation
-RUN . /assets/functions/00-container && \
-    set -x && \
-    package update && \
-    package upgrade && \
-    package install  \
-                    git \
-                    libldap-common \
-                    openssl \
-                    php${PHP_VERSION}-memcached \
-                    tar \
-                    wget \
-                    zlib1g && \
-    clone_git_repo "${OSTICKET_REPO_URL}" "${OSTICKET_VERSION}" /assets/install && \
+# Define sane defaults for nginx user/group used by base image
+ENV NGINX_USER=${NGINX_USER:-nginx} NGINX_GROUP=${NGINX_GROUP:-nginx}
+
+### Dependency Installation (Alpine base)
+RUN set -xe && \
+    apk update && \
+    apk upgrade && \
+    apk add --no-cache \
+        git \
+        openldap \
+        openssl \
+        php82-pecl-memcached \
+        tar \
+        wget \
+        zlib && \
+    git clone --depth 1 --branch "${OSTICKET_VERSION}" "${OSTICKET_REPO_URL}" /assets/install && \
     chown -R "${NGINX_USER}":"${NGINX_GROUP}" /assets/install && \
     chmod -R a+rX /assets/install/ && \
     chmod -R u+rw /assets/install/ && \
@@ -53,7 +55,7 @@ RUN . /assets/functions/00-container && \
 
 ### Setup Official Plugins
 RUN set -x && \
-    clone_git_repo "${OSTICKET_PLUGINS_REPO_URL}" "${OSTICKET_PLUGINS_VERSION}" /usr/src/plugins && \
+    git clone --depth 1 --branch "${OSTICKET_PLUGINS_VERSION}" "${OSTICKET_PLUGINS_REPO_URL}" /usr/src/plugins && \
     cd /usr/src/plugins && \
     php make.php hydrate && \
     for plugin in $(find * -maxdepth 0 -type d ! -name doc ! -name lib); do cp -r ${plugin} /assets/install/include/plugins; done; \
@@ -62,25 +64,25 @@ RUN set -x && \
 
 ### Add Community Plugins
 RUN set -x && \
-    clone_git_repo https://github.com/clonemeagain/osticket-plugin-archiver master /assets/install/include/plugins/archiver && \
-    clone_git_repo  https://github.com/clonemeagain/attachment_preview master /assets/install/include/plugins/attachment-preview && \
-    clone_git_repo  https://github.com/clonemeagain/plugin-autocloser master /assets/install/include/plugins/auto-closer && \
-    clone_git_repo  https://github.com/bkonetzny/osticket-fetch-note master /assets/install/include/plugins/fetch-note && \
-    clone_git_repo  https://github.com/Micke1101/OSTicket-plugin-field-radiobuttons master /assets/install/include/plugins/field-radiobuttons && \
-    clone_git_repo  https://github.com/clonemeagain/osticket-plugin-mentioner master /assets/install/include/plugins/mentioner && \
-    clone_git_repo  https://github.com/philbertphotos/osticket-multildap-auth master /assets/install/include/plugins/multi-ldap && \
+    git clone --depth 1 --branch master https://github.com/clonemeagain/osticket-plugin-archiver /assets/install/include/plugins/archiver && \
+    git clone --depth 1 --branch master https://github.com/clonemeagain/attachment_preview /assets/install/include/plugins/attachment-preview && \
+    git clone --depth 1 --branch master https://github.com/clonemeagain/plugin-autocloser /assets/install/include/plugins/auto-closer && \
+    git clone --depth 1 --branch master https://github.com/bkonetzny/osticket-fetch-note /assets/install/include/plugins/fetch-note && \
+    git clone --depth 1 --branch master https://github.com/Micke1101/OSTicket-plugin-field-radiobuttons /assets/install/include/plugins/field-radiobuttons && \
+    git clone --depth 1 --branch master https://github.com/clonemeagain/osticket-plugin-mentioner /assets/install/include/plugins/mentioner && \
+    git clone --depth 1 --branch master https://github.com/philbertphotos/osticket-multildap-auth /assets/install/include/plugins/multi-ldap && \
     mv /assets/install/include/plugins/multi-ldap/multi-ldap/* /assets/install/include/plugins/multi-ldap/ && \
     rm -rf /assets/install/include/plugins/multi-ldap/multi-ldap && \
-    clone_git_repo  https://github.com/clonemeagain/osticket-plugin-preventautoscroll master /assets/install/include/plugins/prevent-autoscroll && \
-    clone_git_repo  https://github.com/clonemeagain/plugin-fwd-rewriter master /assets/install/include/plugins/rewriter && \
-    clone_git_repo  https://github.com/clonemeagain/osticket-slack master /assets/install/include/plugins/slack && \
-    clone_git_repo  https://github.com/ipavlovi/osTicket-Microsoft-Teams-plugin master /assets/install/include/plugins/teams
+    git clone --depth 1 --branch master https://github.com/clonemeagain/osticket-plugin-preventautoscroll /assets/install/include/plugins/prevent-autoscroll && \
+    git clone --depth 1 --branch master https://github.com/clonemeagain/plugin-fwd-rewriter /assets/install/include/plugins/rewriter && \
+    git clone --depth 1 --branch master https://github.com/clonemeagain/osticket-slack /assets/install/include/plugins/slack && \
+    git clone --depth 1 --branch master https://github.com/ipavlovi/osTicket-Microsoft-Teams-plugin /assets/install/include/plugins/teams
 
 ### Log Miscellany Installation and Cleanup
 RUN set -x && \
     touch /var/log/msmtp.log && \
     chown "${NGINX_USER}":"${NGINX_GROUP}" /var/log/msmtp.log && \
-    package cleanup && \
+    apk del --no-cache git || true && \
     rm -rf \
             /root/.composer \
             /tmp/* \
